@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery App - Painel do Lojista</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { background-color: #f7f9fb; color: #2d3748; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background-color: #1a365d; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .main-container { flex: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 30px 20px; }
+        .form-box { background: white; max-width: 500px; margin: 20px auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .form-box h2 { margin-bottom: 20px; color: #1a365d; text-align: center; }
+        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 13px; font-weight: bold; color: #4a5568; }
+        .input-group input { padding: 10px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 14px; }
+        .btn-submit { width: 100%; background: #3182ce; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🍽️ Portal do Lojista</h1>
+        <a href="index.html" style="color:white; text-decoration:none; font-weight:bold;">Voltar ao App</a>
+    </header>
+
+    <div class="main-container">
+        <!-- Tela de Cadastro de Nova Loja -->
+        <div id="painel-cadastro-loja" class="form-box">
+            <h2>Cadastre seu Restaurante</h2>
+            <form onsubmit="enviarCadastroLoja(event)">
+                <div class="input-group"><label>Nome do Restaurante</label><input type="text" id="cad-nome" required></div>
+                <div class="input-group"><label>CNPJ</label><input type="text" id="cad-cnpj" required></div>
+                <div class="input-group"><label>Telefone</label><input type="text" id="cad-tel" required></div>
+                <div class="input-group"><label>E-mail (Seu Login)</label><input type="email" id="cad-email" required></div>
+                <div class="input-group"><label>Senha</label><input type="password" id="cad-senha" required></div>
+                <button type="submit" class="btn-submit" style="background: #38a169;">Enviar para Aprovação</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const URL_API = "https://SEU-PROJETO.onrender.com";
+
+        async function enviarCadastroLoja(event) {
+            event.preventDefault();
+            const dados = {
+                nome: document.getElementById('cad-nome').value,
+                cnpj: document.getElementById('cad-cnpj').value,
+                tel: document.getElementById('cad-tel').value,
+                email: document.getElementById('cad-email').value,
+                senha: document.getElementById('cad-senha').value
+            };
+
+            try {
+                const res = await fetch(`${URL_API}/api/lojas/cadastrar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                const resultado = await res.json();
+                alert(resultado.mensagem);
+                location.reload();
+            } catch (e) {
+                alert('Erro ao conectar com o servidor.');
+            }
+        }
+    </script>
+</body>
+</html>
