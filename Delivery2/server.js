@@ -4,7 +4,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS livre para o GitHub Pages acessar
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -12,7 +11,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Banco de dados em memória estruturado
 let db = {
     clientes: [],
     lojas: [
@@ -25,12 +23,11 @@ let db = {
     }
 };
 
-// --- ROTAS DE CLIENTES ---
+// --- CLIENTES ---
 app.post('/api/clientes/cadastrar', (req, res) => {
     const { nome, email, senha, tel, end } = req.body;
-    const existe = db.clientes.find(c => c.email === email);
-    if (existe) {
-        return res.status(400).json({ sucesso: false, mensagem: 'E-mail já cadastrado!' });
+    if (db.clientes.find(c => c.email === email) || db.lojas.find(l => l.email === email)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'E-mail já cadastrado no sistema!' });
     }
     db.clientes.push({ nome, email, senha, tel, end });
     res.json({ sucesso: true, mensagem: 'Cadastro realizado com sucesso!' });
@@ -46,16 +43,15 @@ app.post('/api/clientes/login', (req, res) => {
     }
 });
 
-// --- ROTAS DE LOJAS ---
+// --- LOJAS ---
 app.get('/api/lojas', (req, res) => {
     res.json(db.lojas);
 });
 
 app.post('/api/lojas/cadastrar', (req, res) => {
     const { nome, cnpj, tel, email, senha } = req.body;
-    const existe = db.lojas.find(l => l.email === email);
-    if (existe) {
-        return res.status(400).json({ sucesso: false, mensagem: 'E-mail de loja já cadastrado!' });
+    if (db.lojas.find(l => l.email === email) || db.clientes.find(c => c.email === email)) {
+        return res.status(400).json({ sucesso: false, mensagem: 'E-mail já cadastrado!' });
     }
     db.lojas.push({ nome, cnpj, tel, email, senha, aprovada: false });
     res.json({ sucesso: true, mensagem: 'Loja cadastrada com sucesso! Aguarde a aprovação do Admin.' });
@@ -64,16 +60,17 @@ app.post('/api/lojas/cadastrar', (req, res) => {
 app.post('/api/lojas/login', (req, res) => {
     const { email, senha } = req.body;
     const loja = db.lojas.find(l => l.email === email && l.senha === senha);
+    
     if (!loja) {
         return res.status(401).json({ sucesso: false, mensagem: 'E-mail ou senha da loja inválidos!' });
     }
     if (!loja.aprovada) {
-        return res.status(403).json({ sucesso: false, mensagem: 'Sua loja ainda não foi aprovada pelo Administrador!' });
+        return res.status(403).json({ sucesso: false, aprovada: false, mensagem: 'Sua loja está aguardando a aprovação do Administrador.' });
     }
-    res.json({ sucesso: true, loja });
+    res.json({ sucesso: true, aprovada: true, loja });
 });
 
-// --- ROTAS DE PRODUTOS ---
+// --- PRODUTOS ---
 app.get('/api/produtos/:email', (req, res) => {
     const email = req.params.email;
     res.json(db.produtos[email] || []);
@@ -85,16 +82,16 @@ app.post('/api/produtos/adicionar', (req, res) => {
         db.produtos[emailLoja] = [];
     }
     db.produtos[emailLoja].push({ nome, preco });
-    res.json({ sucesso: true, mensagem: 'Produto adicionado com sucesso!' });
+    res.json({ sucesso: true });
 });
 
-// --- ROTAS DE ADMIN ---
+// --- ADMIN ---
 app.post('/api/admin/aprovar', (req, res) => {
     const { email } = req.body;
     const loja = db.lojas.find(l => l.email === email);
     if (loja) {
         loja.aprovada = true;
-        res.json({ sucesso: true, mensagem: 'Loja aprovada!' });
+        res.json({ sucesso: true, mensagem: 'Loja aprovada com sucesso!' });
     } else {
         res.status(404).json({ sucesso: false, mensagem: 'Loja não encontrada' });
     }
