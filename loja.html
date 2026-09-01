@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery App - Painel do Lojista</title>
+    <title>Portal do Lojista</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
         body { background-color: #f7f9fb; color: #2d3748; display: flex; flex-direction: column; min-height: 100vh; }
@@ -26,39 +26,32 @@
     </header>
 
     <div class="main-container">
-        <!-- Escolha inicial: Login ou Cadastro -->
-        <div id="painel-inicial" class="form-box">
-            <h2>Área do Restaurante</h2>
-            <button onclick="mostrarTela('login')" class="btn-submit">Fazer Login na minha Loja</button>
-            <button onclick="mostrarTela('cadastro')" class="btn-submit" style="background: #38a169; margin-top:10px;">Cadastrar Novo Restaurante</button>
-        </div>
-
-        <!-- Tela de Login da Loja -->
-        <div id="painel-login" class="form-box" style="display:none;">
-            <h2>Login do Lojista</h2>
-            <form onsubmit="fazerLoginLoja(event)">
-                <div class="input-group"><label>E-mail</label><input type="email" id="log-email" required></div>
-                <div class="input-group"><label>Senha</label><input type="password" id="log-senha" required></div>
-                <button type="submit" class="btn-submit">Entrar no Painel</button>
+        <!-- Login / Cadastro unificado da Loja -->
+        <div id="painel-auth" class="form-box">
+            <h2 id="titulo-auth">Entrar na minha Loja</h2>
+            <form onsubmit="autenticarLoja(event)">
+                <div id="campos-cadastro-loja" style="display:none;">
+                    <div class="input-group"><label>Nome do Restaurante</label><input type="text" id="cad-nome"></div>
+                    <div class="input-group"><label>CNPJ</label><input type="text" id="cad-cnpj"></div>
+                    <div class="input-group"><label>Telefone</label><input type="text" id="cad-tel"></div>
+                </div>
+                <div class="input-group"><label>E-mail</label><input type="email" id="loja-email" required></div>
+                <div class="input-group"><label>Senha</label><input type="password" id="loja-senha" required></div>
+                <button type="submit" id="btn-acao-loja" class="btn-submit">Entrar</button>
             </form>
-            <button onclick="mostrarTela('inicial')" class="btn-submit" style="background:#718096; margin-top:10px;">Voltar</button>
+            <p style="text-align:center; margin-top:15px; font-size:14px;">
+                <span id="trocar-texto">Não tem cadastro? <a href="#" onclick="alternarLojaAuth()" style="color:#3182ce;">Cadastre seu restaurante</a></span>
+            </p>
         </div>
 
-        <!-- Tela de Cadastro de Loja -->
-        <div id="painel-cadastro" class="form-box" style="display:none;">
-            <h2>Cadastre seu Restaurante</h2>
-            <form onsubmit="enviarCadastroLoja(event)">
-                <div class="input-group"><label>Nome do Restaurante</label><input type="text" id="cad-nome" required></div>
-                <div class="input-group"><label>CNPJ</label><input type="text" id="cad-cnpj" required></div>
-                <div class="input-group"><label>Telefone</label><input type="text" id="cad-tel" required></div>
-                <div class="input-group"><label>E-mail (Seu Login)</label><input type="email" id="cad-email" required></div>
-                <div class="input-group"><label>Senha</label><input type="password" id="cad-senha" required></div>
-                <button type="submit" class="btn-submit" style="background: #38a169;">Enviar para Aprovação</button>
-            </form>
-            <button onclick="mostrarTela('inicial')" class="btn-submit" style="background:#718096; margin-top:10px;">Voltar</button>
+        <!-- Alerta de Pendente -->
+        <div id="painel-pendente" class="form-box" style="display:none; text-align:center;">
+            <h2>⏳ Aguardando Aprovação</h2>
+            <p style="margin:20px 0; color:#718096;">Sua loja foi cadastrada com sucesso, mas ainda está aguardando o Administrador principal aprovar o acesso.</p>
+            <button onclick="sairLoja()" class="btn-submit" style="background:#718096;">Voltar</button>
         </div>
 
-        <!-- Painel Interno da Loja (Adicionar Produtos) -->
+        <!-- Painel Interno da Loja (Produtos) -->
         <div id="painel-interno" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 id="titulo-loja-logada">Gerenciar Cardápio</h2>
@@ -66,15 +59,15 @@
             </div>
 
             <div class="form-box" style="margin:0 0 20px 0; max-width:100%;">
-                <h3>Adicionar Novo Prato / Produto</h3>
+                <h3>Adicionar Novo Prato</h3>
                 <form onsubmit="adicionarProduto(event)" style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-                    <input type="text" id="prod-nome" placeholder="Nome do prato (ex: Pizza Margherita)" required style="flex:2; padding:10px; border:1px solid #cbd5e0; border-radius:5px;">
+                    <input type="text" id="prod-nome" placeholder="Nome do prato" required style="flex:2; padding:10px; border:1px solid #cbd5e0; border-radius:5px;">
                     <input type="number" step="0.01" id="prod-preco" placeholder="Preço (R$)" required style="flex:1; padding:10px; border:1px solid #cbd5e0; border-radius:5px;">
                     <button type="submit" class="btn-submit" style="flex:1; margin-top:0; background:#38a169;">Adicionar</button>
                 </form>
             </div>
 
-            <h3>Seus Produtos Cadastrados</h3>
+            <h3>Seus Produtos</h3>
             <div id="grid-meus-produtos" class="grid-cards"></div>
         </div>
     </div>
@@ -82,129 +75,113 @@
     <script>
         const URL_API = "https://meudelivery2.onrender.com";
         let lojaAtiva = JSON.parse(localStorage.getItem('loja_ativa')) || null;
+        let modoCadastroLoja = false;
 
-        function mostrarTela(tipo) {
-            document.getElementById('painel-inicial').style.display = 'none';
-            document.getElementById('painel-login').style.display = 'none';
-            document.getElementById('painel-cadastro').style.display = 'none';
-            document.getElementById('painel-interno').style.display = 'none';
-
-            if (tipo === 'inicial') document.getElementById('painel-inicial').style.display = 'block';
-            if (tipo === 'login') document.getElementById('painel-login').style.display = 'block';
-            if (tipo === 'cadastro') document.getElementById('painel-cadastro').style.display = 'block';
-            if (tipo === 'interno') document.getElementById('painel-interno').style.display = 'block';
+        function alternarLojaAuth() {
+            modoCadastroLoja = !modoCadastroLoja;
+            document.getElementById('campos-cadastro-loja').style.display = modoCadastroLoja ? 'block' : 'none';
+            document.getElementById('titulo-auth').innerText = modoCadastroLoja ? 'Cadastre seu Restaurante' : 'Entrar na minha Loja';
+            document.getElementById('btn-acao-loja').innerText = modoCadastroLoja ? 'Enviar para Aprovação' : 'Entrar';
+            document.getElementById('trocar-texto').innerHTML = modoCadastroLoja ? 
+                `Já tem cadastro? <a href="#" onclick="alternarLojaAuth()" style="color:#3182ce;">Faça login</a>` : 
+                `Não tem cadastro? <a href="#" onclick="alternarLojaAuth()" style="color:#3182ce;">Cadastre seu restaurante</a>`;
         }
 
-        async function fazerLoginLoja(event) {
+        async function autenticarLoja(event) {
             event.preventDefault();
-            const email = document.getElementById('log-email').value;
-            const senha = document.getElementById('log-senha').value;
+            const email = document.getElementById('loja-email').value;
+            const senha = document.getElementById('loja-senha').value;
 
-            try {
-                const res = await fetch(`${URL_API}/api/lojas/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
-                });
-                const resultado = await res.json();
-                if (resultado.sucesso) {
-                    lojaAtiva = resultado.loja;
-                    localStorage.setItem('loja_ativa', JSON.stringify(lojaAtiva));
-                    carregarPainelLoja();
-                } else {
-                    alert(resultado.mensagem);
-                }
-            } catch (e) {
-                alert('Erro ao conectar com o servidor.');
-            }
-        }
-
-        async function enviarCadastroLoja(event) {
-            event.preventDefault();
-            const dados = {
-                nome: document.getElementById('cad-nome').value,
-                cnpj: document.getElementById('cad-cnpj').value,
-                tel: document.getElementById('cad-tel').value,
-                email: document.getElementById('cad-email').value,
-                senha: document.getElementById('cad-senha').value
-            };
-
-            try {
+            if (modoCadastroLoja) {
+                const dados = {
+                    nome: document.getElementById('cad-nome').value,
+                    cnpj: document.getElementById('cad-cnpj').value,
+                    tel: document.getElementById('cad-tel').value,
+                    email, senha
+                };
                 const res = await fetch(`${URL_API}/api/lojas/cadastrar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
                 });
-                const resultado = await res.json();
-                alert(resultado.mensagem);
-                mostrarTela('inicial');
-            } catch (e) {
-                alert('Erro ao cadastrar.');
+                const r = await res.json();
+                alert(r.mensagem);
+                if (r.sucesso) {
+                    document.getElementById('painel-auth').style.display = 'none';
+                    document.getElementById('painel-pendente').style.display = 'block';
+                }
+            } else {
+                const res = await fetch(`${URL_API}/api/lojas/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const r = await res.json();
+                if (r.sucesso) {
+                    lojaAtiva = r.loja;
+                    localStorage.setItem('loja_ativa', JSON.stringify(lojaAtiva));
+                    verificarEstadoLoja();
+                } else {
+                    if (r.aprovada === false) {
+                        document.getElementById('painel-auth').style.display = 'none';
+                        document.getElementById('painel-pendente').style.display = 'block';
+                    } else {
+                        alert(r.mensagem);
+                    }
+                }
+            }
+        }
+
+        function verificarEstadoLoja() {
+            document.getElementById('painel-auth').style.display = 'none';
+            document.getElementById('painel-pendente').style.display = 'none';
+            document.getElementById('painel-interno').style.display = 'none';
+
+            if (lojaAtiva) {
+                if (lojaAtiva.aprovada) {
+                    document.getElementById('titulo-loja-logada').innerText = `Cardápio: ${lojaAtiva.nome}`;
+                    document.getElementById('painel-interno').style.display = 'block';
+                    carregarProdutosLoja();
+                } else {
+                    document.getElementById('painel-pendente').style.display = 'block';
+                }
+            } else {
+                document.getElementById('painel-auth').style.display = 'block';
             }
         }
 
         async function carregarProdutosLoja() {
             if (!lojaAtiva) return;
-            try {
-                const res = await fetch(`${URL_API}/api/produtos/${lojaAtiva.email}`);
-                const produtos = await res.json();
-                const grid = document.getElementById('grid-meus-produtos');
-                grid.innerHTML = '';
-
-                if (produtos.length === 0) {
-                    grid.innerHTML = `<p>Nenhum produto cadastrado ainda.</p>`;
-                    return;
-                }
-
-                produtos.forEach(p => {
-                    grid.innerHTML += `
-                        <div class="card-item">
-                            <h4>${p.nome}</h4>
-                            <p style="color:#38a169; font-weight:bold; margin-top:5px;">R$ ${parseFloat(p.preco).toFixed(2)}</p>
-                        </div>
-                    `;
-                });
-            } catch (e) {
-                console.error("Erro ao carregar produtos");
-            }
+            const res = await fetch(`${URL_API}/api/produtos/${lojaAtiva.email}`);
+            const produtos = await res.json();
+            const grid = document.getElementById('grid-meus-produtos');
+            grid.innerHTML = produtos.length === 0 ? '<p>Nenhum produto cadastrado.</p>' : '';
+            produtos.forEach(p => {
+                grid.innerHTML += `<div class="card-item"><h4>${p.nome}</h4><p style="color:#38a169; font-weight:bold;">R$ ${parseFloat(p.preco).toFixed(2)}</p></div>`;
+            });
         }
 
         async function adicionarProduto(event) {
             event.preventDefault();
             const nome = document.getElementById('prod-nome').value;
             const preco = document.getElementById('prod-preco').value;
-
-            try {
-                await fetch(`${URL_API}/api/produtos/adicionar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ emailLoja: lojaAtiva.email, nome, preco })
-                });
-                document.getElementById('prod-nome').value = '';
-                document.getElementById('prod-preco').value = '';
-                carregarProdutosLoja();
-            } catch (e) {
-                alert('Erro ao adicionar produto.');
-            }
-        }
-
-        function carregarPainelLoja() {
-            if (lojaAtiva) {
-                document.getElementById('titulo-loja-logada').innerText = `Cardápio: ${lojaAtiva.nome}`;
-                mostrarTela('interno');
-                carregarProdutosLoja();
-            } else {
-                mostrarTela('inicial');
-            }
+            await fetch(`${URL_API}/api/produtos/adicionar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emailLoja: lojaAtiva.email, nome, preco })
+            });
+            document.getElementById('prod-nome').value = '';
+            document.getElementById('prod-preco').value = '';
+            carregarProdutosLoja();
         }
 
         function sairLoja() {
             localStorage.removeItem('loja_ativa');
             lojaAtiva = null;
-            mostrarTela('inicial');
+            verificarEstadoLoja();
         }
 
-        carregarPainelLoja();
+        verificarEstadoLoja();
     </script>
 </body>
 </html>
