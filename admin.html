@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery App - Painel Admin</title>
+    <title>Painel Admin</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
         body { background-color: #f7f9fb; color: #2d3748; display: flex; flex-direction: column; min-height: 100vh; }
@@ -61,24 +61,18 @@
                         </tr>
                     `;
                 });
-            } catch (e) {
-                console.error("Erro ao carregar lojas admin:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         async function aprovarLoja(email) {
-            try {
-                const res = await fetch(`${URL_API}/api/admin/aprovar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const resultado = await res.json();
-                alert(resultado.mensagem);
-                carregarLojasAdmin();
-            } catch (e) {
-                alert('Erro ao aprovar loja.');
-            }
+            const res = await fetch(`${URL_API}/api/admin/aprovar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const r = await res.json();
+            alert(r.mensagem);
+            carregarLojasAdmin();
         }
 
         carregarLojasAdmin();
