@@ -9,7 +9,7 @@
         body { background-color: #f7f9fb; color: #2d3748; display: flex; flex-direction: column; min-height: 100vh; }
         header { background-color: #1a365d; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
         .main-container { flex: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 30px 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: 14px; }
         th { background-color: #2b6cb0; color: white; }
         .btn-aprovar { background: #38a169; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -22,7 +22,7 @@
     </header>
 
     <div class="main-container">
-        <h2>Aprovação de Lojas</h2>
+        <h2>Aprovação de Lojas Pendentes</h2>
         <table>
             <thead>
                 <tr>
@@ -45,13 +45,18 @@
                 const tbody = document.getElementById('tabela-lojas');
                 tbody.innerHTML = '';
 
+                if (lojas.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;">Nenhuma loja cadastrada.</td></tr>`;
+                    return;
+                }
+
                 lojas.forEach(loja => {
                     tbody.innerHTML += `
                         <tr>
                             <td>${loja.nome}</td>
                             <td>${loja.email}</td>
                             <td>
-                                ${loja.aprovada ? 'Aprovada ✅' : `<button class="btn-aprovar" onclick="aprovarLoja('${loja.email}')">Aprovar</button>`}
+                                ${loja.aprovada ? 'Aprovada ✅' : `<button class="btn-aprovar" onclick="aprovarLoja('${loja.email}')">Aprovar Loja</button>`}
                             </td>
                         </tr>
                     `;
@@ -63,19 +68,20 @@
 
         async function aprovarLoja(email) {
             try {
-                await fetch(`${URL_API}/api/admin/aprovar`, {
+                const res = await fetch(`${URL_API}/api/admin/aprovar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
                 });
-                alert('Loja aprovada com sucesso!');
+                const resultado = await res.json();
+                alert(resultado.mensagem);
                 carregarLojasAdmin();
             } catch (e) {
                 alert('Erro ao aprovar loja.');
             }
         }
 
-    carregarLojasAdmin();
+        carregarLojasAdmin();
     </script>
 </body>
 </html>
